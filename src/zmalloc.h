@@ -45,10 +45,13 @@
 #error "Newer version of tcmalloc required"
 #endif
 
+// h7: USE_JEMALLOC是在哪里定义的呢？makefile里面没有看到啊
 #elif defined(USE_JEMALLOC)
 #define ZMALLOC_LIB ("jemalloc-" __xstr(JEMALLOC_VERSION_MAJOR) "." __xstr(JEMALLOC_VERSION_MINOR) "." __xstr(JEMALLOC_VERSION_BUGFIX))
 #include <jemalloc/jemalloc.h>
+// h7: 判断主版本号和副版本号
 #if (JEMALLOC_VERSION_MAJOR == 2 && JEMALLOC_VERSION_MINOR >= 1) || (JEMALLOC_VERSION_MAJOR > 2)
+// h7: 这个宏非常重要，确定系统是否有函数malloc_size，我们整个分析假设是在Linux的jemalloc上，所以是有提供的
 #define HAVE_MALLOC_SIZE 1
 #define zmalloc_size(p) je_malloc_usable_size(p)
 #else
@@ -78,6 +81,9 @@ size_t zmalloc_get_rss(void);
 size_t zmalloc_get_private_dirty(void);
 void zlibc_free(void *ptr);
 
+// h7: 注意这个函数有点奇怪
+// h7: 通过 man malloc_size ，我们知道了malloc_size可以返回指向了分配的内存块的大小，但是有些系统并没有实现这个函数，
+// h7: 对于那些没有实现这个函数的，我们需要自己来实现这个函数,实现在zmalloc.c中，系统有没有提供是通过zmalloc.h中定义的宏HAVE_MALLOC_SIZE说明的
 #ifndef HAVE_MALLOC_SIZE
 size_t zmalloc_size(void *ptr);
 #endif
