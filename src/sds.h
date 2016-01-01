@@ -42,13 +42,16 @@
 /*
  * 类型别名，用于指向 sdshdr 的 buf 属性
  */
+// heamon7: 注意这个在sds.c中的sdsnewlen中有使用
 typedef char *sds;
 
 /*
  * 保存字符串对象的结构
  */
+//heamon7: sds和sdshdr有什么区别
+//heamon7: sdshdr的定义使用了一个变长数组，flesible array member
 struct sdshdr {
-    
+
     // buf 中已占用空间的长度
     int len;
 
@@ -56,6 +59,7 @@ struct sdshdr {
     int free;
 
     // 数据空间
+    // heamon7: 通过使用flexible member array而不是poiter可以有效的减少内存使用量
     char buf[];
 };
 
@@ -74,7 +78,13 @@ static inline size_t sdslen(const sds s) {
  *
  * T = O(1)
  */
+ //heamon7: 使用static，声明sdsavail为一个具有内部链接的函数，内部链接意味着该变量具有文件作用域，可以在一个文件的任何地方使用，
+//heamon7: 而不能在一个多文件程序的其他文件中使用（外部链接，默认）,空连接指的是 具有代码块作用域或者函数原型作用域的变量
+
+//heamon7: 声明为inline的内联函数，可以避免程序运行过程中的函数调用开销，编译时会将内联函数的代码直接展开在函数被调用的地方。
+//heamon7: 但在选择使用内联函数时，必须在程序占用空间和程序执行效率之间进行权衡，因为过多的比较复杂的函数进行内联扩展将带来很大的存储资源开支。另外还需要非常注意的是对递归函数的内联扩展可能带来部分编译器的无穷编译。(by wiki)
 static inline size_t sdsavail(const sds s) {
+    //heamon7: ?为什么要有这一步，而不直接返回s的free属性呢？
     struct sdshdr *sh = (void*)(s-(sizeof(struct sdshdr)));
     return sh->free;
 }
